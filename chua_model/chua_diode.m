@@ -53,6 +53,6 @@ I4 = (1./(1+exp(mult.*(-vin+Pos_E1)))) .* (vin.*Gc - Pos_c);
 % total current in Chua diode
 I = (I0 + I1 + I2 + I3 + I4);
 
-plot(vin, I);
+plot(vin, I*10);
 grid on;
 
