@@ -5,7 +5,7 @@ function out = chuaOpAmp(istate,time,R,L)
     %%% out     : timex3 matrix of all states for V1 V2 IL
     %%%
     %%% ex. run : out = chuaOpAmp([0.1 -0.1 0], 3000,1800);
-    %%% plot    : plot3(out(:,1),out(:,2),out(:,3))
+    %%% plot    : plot3(out(:,1),out(:,2),-10 * out(:,3))
     
     % default inductance value
     if nargin < 4
@@ -48,50 +48,48 @@ function next_state = Chua_ODE(state,R,L)
     G  = 1/R;
     
     % op amp rails
-    vmax = 9;
-    vmin = -9;
+    vmax = 10.66;
+    vmin = -10.16;
 
     %%% Chua diode parameters %%%
     %circuit values   theoretical values
-    R1 = 3239;           %3300  ohms
-    R2 = 21780;          %22000 ohms
+    R1 = 3240;           %3300  ohms
+    R2 = 21800;          %22000 ohms
     R3 = 21740;          %22000 ohms
-    R4 = 2166;           %2200  ohms
-    R5 = 220.3;          %220   ohms
+    R4 = 2160;           %2200  ohms
+    R5 = 219.7;            %220   ohms
     R6 = 221;            %221   ohms
 
-    % Esaturation
-    Pos_Esat = vmax;
-    Neg_Esat = -vmin;
+    Pos_Esat = vmax * .57;
+    Neg_Esat = -vmin * .72;
 
-    % E1 and E2 define range of the piecewise functions
-    % positive half of I-V curve
+    % E1 and E2 define limit of piecewise functions
     Pos_E1 = R4/(R5+R4)*Pos_Esat;
-    Pos_E2 = R1/(R2+R1)*Pos_Esat;
-    % negative half of I-V curve
+    Pos_E2 = 1.2 * R1/(R2+R1)*Pos_Esat;
+
     Neg_E1 = R4/(R5+R4)*Neg_Esat;
-    Neg_E2 = R1/(R2+R1)*Neg_Esat;
+    Neg_E2 = 1.1 * R1/(R2+R1)*Neg_Esat;
 
     % piecewise function slopes
     Ga = (-1/R1 - 1/R4);
     Gb = (1/R3 - 1/R4);
-    Gc = (1/R6 + 1/R3);
-
+    Gc = .5 * (1/R6 + 1/R3);
+    
     % piecewise intercepts
-    Pos_b = Pos_E2*(Ga-Gb);
-    Pos_c = Pos_E1*(Gc-Gb) + Pos_E2*(Gb-Ga);
-    Neg_b = Neg_E2*(Ga-Gb);
-    Neg_c = Neg_E1*(Gc-Gb) + Neg_E2*(Gb-Ga);
+    Pos_b = 1.2 * Pos_E2*(Ga-Gb);
+    Pos_c = Pos_E1*(Gc-Gb) + Pos_E2*(Gb-Ga) +.00007;
+    Neg_b = Neg_E2*(Ga-Gb) + .00007;
+    Neg_c = Neg_E1*(Gc-Gb) + Neg_E2*(Gb-Ga)-.00007;
 
     % multiplier for sigmoids
-    mult  = 1000;
+    mult = 1000;
 
     % current sigmoids
-    I0 = (1/(1+exp(mult*(x+Neg_E1)))) * (x*Gc + Neg_c);
-    I1 = (1/(1+exp(mult*(x+Neg_E2)))-1/(1+exp(mult*(x+Neg_E1)))) * (x*Gb - Neg_b);
-    I2 = (1/(1+exp(mult*(x-Pos_E2)))-1/(1+exp(mult*(x+Neg_E2)))) * (x*Ga);
-    I3 = (1/(1+exp(mult*(x-Pos_E1)))-1/(1+exp(mult*(x-Pos_E2)))) * (x*Gb + Pos_b);
-    I4 = (1/(1+exp(mult*(-x+Pos_E1))))* (x*Gc - Pos_c);
+    I0 = (1./(1+exp(mult.*(x+Neg_E1)))) .* (x.*Gc + Neg_c);
+    I1 = (1./(1+exp(mult.*(x+Neg_E2)))-1./(1+exp(mult.*(x+Neg_E1)))) .* (x.*Gb - Neg_b);
+    I2 = (1./(1+exp(mult.*(x-Pos_E2)))-1./(1+exp(mult.*(x+Neg_E2)))) .* (x.*Ga-.00007);
+    I3 = (1./(1+exp(mult.*(x-Pos_E1)))-1./(1+exp(mult.*(x-Pos_E2)))) .* (x.*Gb + Pos_b);
+    I4 = (1./(1+exp(mult.*(-x+Pos_E1)))) .* (x.*Gc - Pos_c);
 
     % total current in Chua diode
     I = I0 + I1 + I2 + I3 + I4;
